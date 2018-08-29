@@ -69,19 +69,37 @@ public class EsIntegrationTests extends ESIntegTestCase {
     public void testSearchVector() throws Exception {
         createIndex("test");
 
+        // Put mapping
+        String mappingJson = "{\n" +
+                "      \"properties\": {\n" +
+                "        \"content_vector\": {\n" +
+                "          \"type\": \"binary\",\n" +
+                "          \"doc_values\": true\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }";
+
+
+        this.client.admin().indices().preparePutMapping("test").setType("test")
+                .setSource(mappingJson, XContentType.JSON)
+                .execute().actionGet();
+
         // GIVEN
         indexVectors("1");
         indexVectors("2");
         indexVectors("3");
         refresh();
 
+
         // WHEN
         SearchResponse searchResponse = this.client.prepareSearch("test", "test")
-//                .setQuery(QueryBuilders.wrapperQuery(getQuery()))
-                .execute().actionGet();;
+                .setQuery(QueryBuilders.wrapperQuery(getStringQuery()))
+                .execute().actionGet();
 
         // THEN
+        // assertThat(searchResponse.toString(), is(""));  //uncomment this if you want to print result
         assertThat(searchResponse.getHits().totalHits, is(3L));
+
     }
 
     private void indexVectors(String id) throws Exception {
@@ -91,7 +109,7 @@ public class EsIntegrationTests extends ESIntegTestCase {
     }
 
 
-    private static String convertArrayToBase64(double[] array) {
+    private String convertArrayToBase64(double[] array) {
         final int capacity = 8 * array.length;
         final ByteBuffer bb = ByteBuffer.allocate(capacity);
         for (int i = 0; i < array.length; i++) {
@@ -102,7 +120,7 @@ public class EsIntegrationTests extends ESIntegTestCase {
         return new String(encodedBB.array());
     }
 
-    private static double[] convertBase64ToArray(String base64Str) {
+    private double[] convertBase64ToArray(String base64Str) {
         final byte[] decode = Base64.getDecoder().decode(base64Str.getBytes());
         final DoubleBuffer doubleBuffer = ByteBuffer.wrap(decode).asDoubleBuffer();
 
@@ -111,32 +129,48 @@ public class EsIntegrationTests extends ESIntegTestCase {
         return dims;
     }
 
+    private String getStringQuery() throws Exception {
+        String json = "{\"function_score\": {\n" +
+                "\"query\": { \"match_all\": {} }," +
+                "      \"functions\": [\n" +
+                "        {\n" +
+                "          \"script_score\": {\n" +
+                "            \"script\": {\n" +
+                "              \"source\": \"vector_scoring\",\n" +
+                "              \"lang\": \"binary_vector_score\",\n" +
+                "              \"params\": {\n" +
+                "                \"vector_field\": \"content_vector\",\n" +
+                "                \"vector\": [0.2,0.1,0.1,0.5]\n" +
+                "              }\n" +
+                "            }\n" +
+                "          }\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    }}";
+        return json;
+    }
+
     private String getQuery() throws Exception {
         String json = XContentFactory.jsonBuilder()
                 .startObject()
-                .startObject("query")
-                .startObject("function_score")
-                .startObject("query")
-                .startObject("match")
-                .field("name", "Ben")
-                .endObject()
-                .endObject()
-                .startArray("functions")
-                .startObject()
-                .startObject("script_score")
-                .startObject("script")
-                .field("source", "vector_scoring")
-                .field("lang", "binary_vector_score")
-                .startObject("params")
-                .field("vector_field", "content_vector")
-                .field("vector", new double[]{0.1, 0.2, 0.3, 0.4})
-                .endObject()
-                .endObject()
-                .endObject()
-                .endObject()
-                .endArray()
-                .endObject()
-                .endObject()
+                        .startObject("function_score")
+                            .startObject("query")
+                            .endObject()
+                        .startArray("functions")
+                            .startObject()
+                                 .startObject("script_score")
+                                   .startObject("script")
+                                     .field("source", "vector_scoring")
+                                     .field("lang", "binary_vector_score")
+                                     .startObject("params")
+                                         .field("vector_field", "content_vector")
+                                         .field("vector", new double[]{0.1, 0.2, 0.3, 0.4})
+                                     .endObject()
+                                   .endObject()
+                                 .endObject()
+                            .endObject()
+                        .endArray()
+                        .endObject()
                 .endObject()
                 .toString();
         return json;

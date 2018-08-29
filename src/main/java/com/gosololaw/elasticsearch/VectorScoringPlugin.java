@@ -84,6 +84,7 @@ public final class VectorScoringPlugin extends Plugin implements ScriptPlugin {
                     public SearchScript newInstance(LeafReaderContext context) throws IOException {
 
                         return new SearchScript(p, lookup, context) {
+                            String field = p.get("vector_field").toString();
                             BinaryDocValues accessor = context.reader().getBinaryDocValues(field);
                             Boolean is_value = false;
 
@@ -104,7 +105,7 @@ public final class VectorScoringPlugin extends Plugin implements ScriptPlugin {
                                 try {
                                      bytes = accessor.binaryValue().bytes;
                                 } catch (IOException e) {
-                                     return 0;
+                                     return 0.0;
                                 }
 
                                 final int input_vector_size = inputVector.length;
