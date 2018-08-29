@@ -16,8 +16,48 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+buildscript {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {        
+        classpath "org.elasticsearch.gradle:build-tools:6.3.2"
+    }
+}
+
+group = 'com.gosololaw.elasticsearch'
+version = '0.0.1-SNAPSHOT'
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'elasticsearch.esplugin'
+
+licenseFile = rootProject.file('LICENSE')
+noticeFile = rootProject.file('NOTICE')
+
+/* compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+} */
 
 esplugin {
+  name 'elasticsearch-vector-scoring'
   description 'Provides a fast vector multiplication script.'
   classname 'com.gosololaw.elasticsearch.VectorScoringPlugin'
 }
+
+dependencies {
+    compile "org.elasticsearch:elasticsearch:6.3.2"
+    testCompile "org.elasticsearch.test:framework:6.3.2"
+    testCompile "com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.5.2"
+    testCompile "org.apache.lucene:lucene-test-framework:7.3.1"
+}
+
+forbiddenApis {
+    ignoreFailures = true
+}
+
+checkstyleTest.enabled = false
+integTestRunner.enabled = false

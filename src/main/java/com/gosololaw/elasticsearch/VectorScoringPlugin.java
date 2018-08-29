@@ -13,7 +13,8 @@
  */
 package com.gosololaw.elasticsearch;
 
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.LeafReaderContext;
 
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.elasticsearch.common.settings.Settings;
@@ -109,7 +110,8 @@ public final class VectorScoringPlugin extends Plugin implements ScriptPlugin {
                                 final int input_vector_size = inputVector.length;
 
                                 final ByteArrayDataInput doc_vector = new ByteArrayDataInput(bytes);
-                                doc_vector.readVInt(); // returns the number of values which should be 1, MUST appear hear since it affect the next calls
+                                doc_vector.readVInt(); // returns the number of values which should be 1,
+                                //// MUST appear hear since it affect the next calls
                                 final int doc_vector_length = doc_vector.readVInt(); // returns the number of bytes to read
                                 if(doc_vector_length != input_vector_size * DOUBLE_SIZE) {
                                     return 0.0;
